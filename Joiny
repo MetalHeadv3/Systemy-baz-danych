@@ -1,4 +1,4 @@
-- 1. Wynagrodzenie osób z działów 20 i 50, salary 2000–7000, sortowanie po nazwisku
+-- 1. Wynagrodzenie osób z działów 20 i 50, salary 2000–7000, sortowanie po nazwisku
 SELECT last_name || ' - ' || salary AS wynagrodzenie
 FROM employees
 WHERE department_id IN (20, 50)
@@ -14,8 +14,8 @@ WHERE l.city = 'Toronto';
 
 -- 3. Działy z min_salary > 5000: suma i średnia zarobków (zaokrąglona)
 SELECT d.department_id,
-       ROUND(SUM(e.salary)) AS suma_zarobkow,
-       ROUND(AVG(e.salary)) AS srednia_zarobkow
+       ROUND(SUM(e.salary), 0) AS suma_zarobkow,
+       ROUND(AVG(e.salary), 0) AS srednia_zarobkow
 FROM employees e
 JOIN departments d ON e.department_id = d.department_id
 GROUP BY d.department_id
@@ -24,7 +24,7 @@ HAVING MIN(e.salary) > 5000;
 -- 4. Współpracownicy Jennifer
 SELECT DISTINCT e.first_name, e.last_name
 FROM employees e
-WHERE e.manager_id IN (
+WHERE e.manager_id = (
     SELECT employee_id
     FROM employees
     WHERE first_name = 'Jennifer'
@@ -61,27 +61,30 @@ WHERE e.department_id IN (
     WHERE last_name LIKE '%u%'
 );
 
--- 10. Zatrudnieni w 2005 z menedżerem – parametr kolumny i sortowania
-SELECT hire_date, last_name, &nazwaKolumny
+-- 10. Zatrudnieni w 2005 z menedżerem – parametr kolumny i sortowania (wersja bez zmiennej)
+SELECT hire_date, last_name, salary
 FROM employees
 WHERE EXTRACT(YEAR FROM hire_date) = 2005
   AND manager_id IS NOT NULL
-ORDER BY &nazwaKolumny;
+ORDER BY salary;
 
--- 11. Imię + nazwisko, salary, phone_number – z 3. literą 'e' i fragmentem imienia od użytkownika
+-- 11. Imię + nazwisko, salary, phone_number – 3. litera 'e' i fragment imienia od użytkownika
 SELECT first_name || ' ' || last_name AS full_name, salary, phone_number
 FROM employees
 WHERE SUBSTR(last_name, 3, 1) = 'e'
-  AND LOWER(first_name) LIKE LOWER('%&fragmentImienia%')
-ORDER BY 1 DESC, 2 ASC;
+  AND LOWER(first_name) LIKE LOWER('%an%')
+ORDER BY full_name DESC, salary ASC;
 
 -- 12. Liczba miesięcy pracy i wysokość dodatku
 SELECT first_name, last_name,
        ROUND(MONTHS_BETWEEN(SYSDATE, hire_date)) AS miesiace_pracy,
-       CASE
+       ROUND(
+         CASE
            WHEN MONTHS_BETWEEN(SYSDATE, hire_date) < 150 THEN salary * 0.10
            WHEN MONTHS_BETWEEN(SYSDATE, hire_date) BETWEEN 150 AND 200 THEN salary * 0.20
            ELSE salary * 0.30
-       END AS wysokosc_dodatku
+         END, 2
+       ) AS wysokosc_dodatku
 FROM employees
 ORDER BY miesiace_pracy DESC;
+
