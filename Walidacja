@@ -1,0 +1,110 @@
+--zadanie1
+ALTER TABLE regions ADD CONSTRAINT regions_pk PRIMARY KEY (region_id);
+
+ALTER TABLE countries ADD CONSTRAINT countries_pk PRIMARY KEY (country_id);
+ALTER TABLE countries ADD CONSTRAINT countries_region_fk FOREIGN KEY (region_id)
+  REFERENCES regions(region_id);
+
+ALTER TABLE locations ADD CONSTRAINT locations_pk PRIMARY KEY (location_id);
+ALTER TABLE locations ADD CONSTRAINT locations_country_fk FOREIGN KEY (country_id)
+  REFERENCES countries(country_id);
+
+ALTER TABLE departments ADD CONSTRAINT departments_pk PRIMARY KEY (department_id);
+ALTER TABLE departments ADD CONSTRAINT departments_location_fk FOREIGN KEY (location_id)
+  REFERENCES locations(location_id);
+
+ALTER TABLE jobs ADD CONSTRAINT jobs_pk PRIMARY KEY (job_id);
+
+ALTER TABLE employees ADD CONSTRAINT employees_pk PRIMARY KEY (employee_id);
+ALTER TABLE employees ADD CONSTRAINT employees_dept_fk FOREIGN KEY (department_id)
+  REFERENCES departments(department_id);
+ALTER TABLE employees ADD CONSTRAINT employees_job_fk FOREIGN KEY (job_id)
+  REFERENCES jobs(job_id);
+ALTER TABLE employees ADD CONSTRAINT employees_mgr_fk FOREIGN KEY (manager_id)
+  REFERENCES employees(employee_id);
+
+ALTER TABLE job_history ADD CONSTRAINT job_history_pk PRIMARY KEY (employee_id, start_date);
+ALTER TABLE job_history ADD CONSTRAINT job_history_emp_fk FOREIGN KEY (employee_id)
+  REFERENCES employees(employee_id);
+ALTER TABLE job_history ADD CONSTRAINT job_history_job_fk FOREIGN KEY (job_id)
+  REFERENCES jobs(job_id);
+ALTER TABLE job_history ADD CONSTRAINT job_history_dept_fk FOREIGN KEY (department_id)
+  REFERENCES departments(department_id);
+
+
+--zadanie2 -- Countries
+INSERT INTO countries (country_id, country_name, region_id)
+VALUES ('SN', 'Senegal_tmp', 1);
+INSERT INTO countries (country_id, country_name, region_id)
+VALUES ('PL', 'Poland', 1);
+
+-- Employees
+INSERT INTO employees (employee_id, first_name, last_name, email, phone_number, hire_date, job_id, salary, department_id)
+VALUES (207, 'Jan', 'Kowalski', 'JKOWALSKI', '123456789', SYSDATE, 'IT_PROG', 4000, 60);
+
+INSERT INTO employees (employee_id, first_name, last_name, email, phone_number, hire_date, job_id, salary, department_id)
+VALUES (208, 'Anna', 'Nowak', 'ANOWAK', '987654321', SYSDATE, 'SA_REP', 3200, 80);
+
+--zadanie3
+UPDATE countries
+SET country_name = 'Senegal', region_id = 4
+WHERE country_id = 'SN';
+
+--zadanie4
+SELECT first_name, last_name, job_id, salary
+FROM employees
+WHERE salary BETWEEN 3000 AND 5000
+  AND job_id LIKE '%MA%';
+
+--b)
+
+SELECT d.department_id, AVG(e.salary) AS avg_salary
+FROM employees e
+JOIN departments d ON e.department_id = d.department_id
+JOIN locations l ON d.location_id = l.location_id
+JOIN countries c ON l.country_id = c.country_id
+JOIN regions r ON c.region_id = r.region_id
+WHERE r.region_name = 'Europe'
+GROUP BY d.department_id;
+
+--c)
+
+SELECT first_name, last_name, department_id, salary,
+       LAG(salary) OVER (PARTITION BY department_id ORDER BY hire_date) AS prev_salary
+FROM employees;
+
+--zadanie5/6
+
+CREATE TABLE pracownicy_csv (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    imie VARCHAR(50),
+    nazwisko VARCHAR(50),
+    data_urodzenia DATE,
+    zarobki DECIMAL(10,2)
+);
+
+--Python:
+import csv
+import mysql.connector
+
+conn = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="krystianp",
+    database="hr"
+)
+cursor = conn.cursor()
+
+with open("pracownicy.csv", "r", encoding="utf-8") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        cursor.execute("""
+            INSERT INTO pracownicy_csv (imie, nazwisko, data_urodzenia, zarobki)
+            VALUES (%s, %s, %s, %s)
+        """, (row["imie"], row["nazwisko"], row["data_urodzenia"], row["zarobki"]))
+
+conn.commit()
+cursor.close()
+conn.close()
+
+print("Dane załadowane")
